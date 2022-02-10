@@ -32,6 +32,8 @@ type Order =
 type Dex = 
  service {
    cancelOrder: (OrderId) -> (CancelOrderReceipt);
+   clear: () -> () oneway;
+   credit: (principal, principal, nat) -> () oneway;
    deposit: (Token) -> (DepositReceipt);
    getAllBalances: () -> (vec Balance) query;
    getBalance: (Token) -> (nat) query;

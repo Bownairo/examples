@@ -14,6 +14,10 @@ export type DepositReceipt = { 'Ok' : bigint } |
   { 'Err' : DepositErr };
 export interface Dex {
   'cancelOrder' : (arg_0: OrderId) => Promise<CancelOrderReceipt>,
+  'clear' : () => Promise<undefined>,
+  'credit' : (arg_0: Principal, arg_1: Principal, arg_2: bigint) => Promise<
+      undefined
+    >,
   'deposit' : (arg_0: Token) => Promise<DepositReceipt>,
   'getAllBalances' : () => Promise<Array<Balance>>,
   'getBalance' : (arg_0: Token) => Promise<bigint>,

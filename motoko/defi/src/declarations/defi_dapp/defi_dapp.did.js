@@ -42,6 +42,12 @@ export const idlFactory = ({ IDL }) => {
   const WithdrawReceipt = IDL.Variant({ 'Ok' : IDL.Nat, 'Err' : WithdrawErr });
   const Dex = IDL.Service({
     'cancelOrder' : IDL.Func([OrderId], [CancelOrderReceipt], []),
+    'clear' : IDL.Func([], [], ['oneway']),
+    'credit' : IDL.Func(
+        [IDL.Principal, IDL.Principal, IDL.Nat],
+        [],
+        ['oneway'],
+      ),
     'deposit' : IDL.Func([Token], [DepositReceipt], []),
     'getAllBalances' : IDL.Func([], [IDL.Vec(Balance)], ['query']),
     'getBalance' : IDL.Func([Token], [IDL.Nat], ['query']),

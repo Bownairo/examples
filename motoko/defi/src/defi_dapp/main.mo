@@ -24,7 +24,7 @@ import B "book";
 import E "exchange";
 import T "types";
 
-actor class Dex() = this {
+shared(init_msg) actor class Dex() = this {
     let icp_fee: Nat = 10_000;
 
     stable var orders_stable : [T.Order] = [];
@@ -403,6 +403,25 @@ actor class Dex() = this {
     
     public shared(msg) func getWithdrawalAddress(): async Blob {
         Account.accountIdentifier(msg.caller, Account.defaultSubaccount())
+    };
+
+    // For testing
+    public shared(msg) func credit(user: Principal, token_canister_id: Principal, amount: Nat) {
+        assert (msg.caller == init_msg.caller);
+        book.addTokens(user,token_canister_id,amount);
+    };
+
+    // For testing.
+    public shared(msg) func clear() {
+        assert (msg.caller == init_msg.caller);
+        book.clear();
+
+        exchanges := M.HashMap<E.TradingPair, E.Exchange>(10, func (k1: E.TradingPair,k2: E.TradingPair): Bool {
+                Principal.equal(k1.0,k2.0) and Principal.equal(k1.1,k2.1)
+            },
+            func (k : E.TradingPair) {
+                Text.hash(Text.concat(Principal.toText(k.0),Principal.toText(k.1)))
+            });
     };
 
     // Required since maps cannot be stable and need to be moved to stable memory
