@@ -71,8 +71,8 @@
             const goldenBalance = await goldenActor.balanceOf($auth.principal);
             const akitaBalance = await akitaActor.balanceOf($auth.principal);
             depositAddressBlob = await backendActor.getDepositAddress();
-            withdrawalBlob = await backendActor.getWithdrawalAddress();
-            withdrawalAddress = toHexString(withdrawalBlob);
+            let withdrawalBlob = await backendActor.getWithdrawalAddress();
+            let withdrawalAddress = toHexString(withdrawalBlob);
             const approved = await ledgerActor.account_balance({account: depositAddressBlob});
             const available = await ledgerActor.account_balance({account: withdrawalBlob});
             let ledgerBalance = 0;
@@ -111,6 +111,8 @@
         else if ($plugWallet.isConnected) {
             console.log("Using Plug for DEX actor");
             backendActor = $plugWallet.plugActor;
+            let withdrawalBlob = await backendActor.getWithdrawalAddress();
+            let withdrawalAddress = toHexString(withdrawalBlob);
         }
 
         accountAddressBlob = await backendActor.getDepositAddress();
