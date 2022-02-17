@@ -44,10 +44,7 @@
 
     // Subscribe to plug wallet value should a user authenticate with Plug Wallet
     plugWallet.subscribe(async (value) => {
-        if(value.plugActor) {
-            const pr = Principal.fromText($canisters[0].canisterId);
-            const deposit = await value.plugActor.deposit(pr);
-        }
+        // Leaving in place for now. May need
     });
 
     onMount(async () => {
@@ -68,42 +65,6 @@
             ledgerActor = createCanisterActor(agent, ledgerIDL, process.env.LEDGER_CANISTER_ID);
 
 
-            const goldenBalance = await goldenActor.balanceOf($auth.principal);
-            const akitaBalance = await akitaActor.balanceOf($auth.principal);
-            depositAddressBlob = await backendActor.getDepositAddress();
-            let withdrawalBlob = await backendActor.getWithdrawalAddress();
-            let withdrawalAddress = toHexString(withdrawalBlob);
-            const approved = await ledgerActor.account_balance({account: depositAddressBlob});
-            const available = await ledgerActor.account_balance({account: withdrawalBlob});
-            let ledgerBalance = 0;
-            let approvedLedgerBalance = 0;
-
-            if(approved.e8s) {
-                ledgerBalance = approved.e8s;
-            }
-            if(available.e8s) {
-                approvedLedgerBalance = available.e8s         
-            }
-
-            // Create a balances array and set the userBalance store object
-            const balances = []
-            for(let i = 0; i < $canisters.length; i++) {
-                const principal = Principal.fromText($canisters[i].canisterId);
-                const dexBalance = await backendActor.getBalance(principal);
-    
-                balances.push({
-                    name: $canisters[i].canisterName,
-                    symbol: $canisters[i].symbol,
-                    canisterBalance: i === 0 ? akitaBalance : i === 1 ? goldenBalance : ledgerBalance,
-                    available: $canisters[i].symbol === 'ICP' ? approvedLedgerBalance : undefined,
-                    dexBalance: dexBalance,
-                    principal: principal
-                })
-            };
-
-            // Update the store values
-            userBalances.set([...balances]);
-
             // TODO: May remove
             await akitaActor.approve(Principal.fromText(process.env.DEFI_DAPP_CANISTER_ID), depositMin);
             await goldenActor.approve(Principal.fromText(process.env.DEFI_DAPP_CANISTER_ID), depositMin);
@@ -111,9 +72,48 @@
         else if ($plugWallet.isConnected) {
             console.log("Using Plug for DEX actor");
             backendActor = $plugWallet.plugActor;
-            let withdrawalBlob = await backendActor.getWithdrawalAddress();
-            let withdrawalAddress = toHexString(withdrawalBlob);
+            akitaActor = $plugWallet.plugAkitaActor;
+            goldenActor = $plugWallet.plugGoldenActor;
+            ledgerActor = $plugWallet.plugLedgerActor;
+
+            withdrawalBlob = await backendActor.getWithdrawalAddress();
+            withdrawalAddress = toHexString(withdrawalBlob);
         }
+
+        const principal = $auth.principal || $plugWallet.principal;
+
+        const goldenBalance = await goldenActor.balanceOf(principal);
+        const akitaBalance = await akitaActor.balanceOf(principal);
+        depositAddressBlob = await backendActor.getDepositAddress();
+        withdrawalBlob = await backendActor.getWithdrawalAddress();
+        withdrawalAddress = toHexString(withdrawalBlob);
+        const approved = await ledgerActor.account_balance({account: depositAddressBlob});
+        const available = await ledgerActor.account_balance({account: withdrawalBlob});
+        let ledgerBalance = 0;
+        let approvedLedgerBalance = 0;
+        if(approved.e8s) {
+            ledgerBalance = approved.e8s;
+        }
+        if(available.e8s) {
+            approvedLedgerBalance = available.e8s         
+        }
+        // Create a balances array and set the userBalance store object
+        const balances = []
+        for(let i = 0; i < $canisters.length; i++) {
+            const principal = Principal.fromText($canisters[i].canisterId);
+            const dexBalance = await backendActor.getBalance(principal);
+
+            balances.push({
+                name: $canisters[i].canisterName,
+                symbol: $canisters[i].symbol,
+                canisterBalance: i === 0 ? akitaBalance : i === 1 ? goldenBalance : ledgerBalance,
+                available: $canisters[i].symbol === 'ICP' ? approvedLedgerBalance : undefined,
+                dexBalance: dexBalance,
+                principal: principal
+            })
+        };
+        // Update the store values
+        userBalances.set([...balances]);
 
         accountAddressBlob = await backendActor.getDepositAddress();
         depositAddress = toHexString(accountAddressBlob);
@@ -349,7 +349,7 @@
                 {#if !withdrawalAddress}
                     <div class="loader"></div>
                 {:else}
-                    {$auth.principal.toString()}
+                    {$auth.principal.toString() || $plugWallet.principal.toString()}
                     <span class="copy-icon" on:click={() => copyWithdrawalAddress($auth.principal.toString())}>
                         <FontAwesomeIcon icon="copy" />
                         {#if didCopyWithdrawalAddress}
